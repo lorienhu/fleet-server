@@ -80,6 +80,19 @@ func (pt *PGPRetrieverT) getPGPKey(ctx context.Context, zlog zerolog.Logger) ([]
 	span.Context.SetLabel("key", key)
 	defer span.End()
 
+	if pt.cfg.UpstreamURL != config.DefaultPGPUpstreamURL {
+		p, ok := pt.cache.GetPGPKey(pt.cfg.UpstreamURL)
+		if ok {
+			return p, nil
+		}
+		p, err := pt.getPGPFromUpstream(ctx)
+		if err != nil {
+			return nil, err
+		}
+		pt.cache.SetPGPKey(pt.cfg.UpstreamURL, p)
+		return p, nil
+	}
+
 	p, ok := pt.cache.GetPGPKey(key)
 	if ok {
 		return p, nil
